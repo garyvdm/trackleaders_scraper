@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+
+import argparse
+from urllib.parse import urlparse, parse_qs
+import json
+import os
+
+import requests
+import bs4
+
+parser = argparse.ArgumentParser()
+parser.add_argument('race', help='Race url fragment.')
+
+args = parser.parse_args()
+headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:39.0) Gecko/20100101 Firefox/39.0', }
+
+
+race_page_response = requests.get('http://trackleaders.com/{}'.format(args.race), headers=headers)
+race_page = bs4.BeautifulSoup(race_page_response.text, "html.parser")
+
+
+def get_rider_info_from_row(rider_row):
+    rider_link = rider_row.find('a')
+    return {
+        'url_fragment': parse_qs(urlparse(rider_link['href']).query)['name'][0],
+        'name': rider_link.string,
+    }
+
+riders = [get_rider_info_from_row(rider_row)
+          for rider_row in race_page.find(id="leaderboard").find_all('tr')[1:]]
+
+
+race_path = os.path.join('races', args.race)
+if not os.path.exists(race_path):
+    os.mkdir(race_path)
+
+with open(os.path.join(race_path, 'riders.json'), 'w') as f:
+    json.dump(riders, f, indent=2, sort_keys=True)
