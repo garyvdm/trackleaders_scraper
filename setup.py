@@ -5,6 +5,7 @@ import setuptools
 setuptools.setup(
     name='trackleaders_scraper',
     include_package_data=True,
+    packages=['trackleaders_scraper'],
     install_requires=[
         'requests',
         'beautifulsoup4',
@@ -13,9 +14,11 @@ setuptools.setup(
         'pytz',
         'aniso8601',
     ],
-    scripts=[
-        'getriders',
-        'getpoints',
-    ]
+    entry_points={
+        'console_scripts': [
+            'getriders = trackleaders_scraper.getriders:main',
+            'getpoints = trackleaders_scraper.getpoints:main',
+        ],
+    }
 )
 
