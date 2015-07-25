@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-import json
 import os
 import logging
 import re
 import itertools
-import collections
 import json
 import functools
 
@@ -14,7 +12,6 @@ import slimit.visitors.nodevisitor
 import slimit.ast
 import dateutil.parser
 import pytz
-import aniso8601
 
 import trackleaders_scraper.common as common
 
@@ -34,10 +31,6 @@ def datetime_parse_localized_to_utc(localalize_str):
         raise ValueError('{}: {}'.format(str(e), brackets_removed))
     return localized.astimezone(pytz.utc)
 
-Point = collections.namedtuple('Point', ['timestamp', 'lat', 'lng'])
-
-raw_to_point = lambda obj: Point(aniso8601.parse_datetime(obj['timestamp']), obj['lat'], obj['lng'])
-point_to_raw = lambda point: {'timestamp': point.timestamp.isoformat(), 'lat': point.lat, 'lng': point.lng}
 
 
 def parse_points_from_spotjs_text(js_text):
@@ -57,7 +50,7 @@ def parse_points_from_spotjs_text(js_text):
             if idnt == 'infowindow.setContent':
                 recived_at_m = recived_at_re.search(children[1].to_ecma())
                 recived_at_utc = datetime_parse_localized_to_utc(recived_at_m.group(1))
-                yield Point(recived_at_utc, location[0], location[1])
+                yield common.Point(recived_at_utc, location[0], location[1])
 
 
 def main():
@@ -75,14 +68,8 @@ def main():
         try:
             logging.info('Getting data for {name}'.format(**rider))
             rider_path = os.path.join(race_path, rider['url_fragment'])
-
             rider_points_path = os.path.join(rider_path, 'points.json')
-            if os.path.exists(rider_points_path):
-                with open(rider_points_path) as f:
-                    oldpoints = json.load(f)
-            else:
-                oldpoints = []
-            oldpoints = [raw_to_point(point) for point in oldpoints]
+            oldpoints = common.load_rider_points(rider_points_path=rider_points_path)
 
             spot_js_url = 'http://trackleaders.com/spot/{}/{}.js'.format(args.race, rider['url_fragment'])
             spot_js_response = common.retry(functools.partial(session.get, spot_js_url))
@@ -90,7 +77,7 @@ def main():
             newpoints = parse_points_from_spotjs_text(spot_js_response.text)
 
             points_set = set(itertools.chain(oldpoints, newpoints))
-            points_sorted = [point_to_raw(point) for point in sorted(points_set)]
+            points_sorted = [common.point_to_raw(point) for point in sorted(points_set)]
             if not points_sorted:
                 logging.warning('No points for {name}.'.format(**rider))
             with common.DelayedKeyboardInterrupt():
