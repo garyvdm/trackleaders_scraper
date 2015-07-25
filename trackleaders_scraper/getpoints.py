@@ -24,7 +24,7 @@ recived_at_re = re.compile('received at: (.*?) <br />')
 def datetime_parse_localized_to_utc(localalize_str):
     dt_parse_tzinfos = {
         "BST": 3600,
-        "CET": 3600,
+        "CET": 7200,
     }
     brackets_removed = localalize_str.replace('(', '').replace(')', '')
     try:
