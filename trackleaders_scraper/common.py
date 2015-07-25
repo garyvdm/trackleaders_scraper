@@ -3,6 +3,7 @@ import functools
 import logging
 import os
 import signal
+import sys
 
 import requests
 
@@ -47,3 +48,15 @@ class DelayedKeyboardInterrupt(object):
         signal.signal(signal.SIGINT, self.old_handler)
         if self.signal_received:
             self.old_handler(*self.signal_received)
+
+
+def retry(func, retry_count=3):
+    try_count = 0
+    errors = []
+    while try_count < retry_count:
+        try:
+            return func()
+        except Exception:
+            errors.append(sys.exc_info())
+    raise Exception("Failed {} times.".format(try_count), errors=errors)
+

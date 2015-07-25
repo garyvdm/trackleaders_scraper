@@ -7,6 +7,7 @@ import re
 import itertools
 import collections
 import json
+import functools
 
 import slimit
 import slimit.visitors.nodevisitor
@@ -84,7 +85,7 @@ def main():
             oldpoints = [raw_to_point(point) for point in oldpoints]
 
             spot_js_url = 'http://trackleaders.com/spot/{}/{}.js'.format(args.race, rider['url_fragment'])
-            spot_js_response = session.get(spot_js_url)
+            spot_js_response = common.retry(functools.partial(session.get, spot_js_url))
             spot_js_response.raise_for_status()
             newpoints = parse_points_from_spotjs_text(spot_js_response.text)
 
