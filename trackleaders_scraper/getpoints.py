@@ -23,7 +23,8 @@ recived_at_re = re.compile('received at: (.*?) <br />')
 
 def datetime_parse_localized_to_utc(localalize_str):
     dt_parse_tzinfos = {
-        "BST": 3600
+        "BST": 3600,
+        "CET": 3600,
     }
     brackets_removed = localalize_str.replace('(', '').replace(')', '')
     try:
@@ -89,11 +90,13 @@ def main():
 
             points_set = set(itertools.chain(oldpoints, newpoints))
             points_sorted = [point_to_raw(point) for point in sorted(points_set)]
+            if not points_sorted:
+                logging.warning('No points for {name}.'.format(**rider))
             with common.DelayedKeyboardInterrupt():
                 if not os.path.exists(rider_path):
                     os.mkdir(rider_path)
                 with open(rider_points_path, 'w') as f:
-                    json.dump(points_sorted, f, indent=2)
+                    json.dump(points_sorted, f, indent=2, sort_keys=True)
 
         except Exception:
             logging.exception('Error for {name}'.format(**rider))
